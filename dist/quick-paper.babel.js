@@ -9,7 +9,7 @@ function _defineProperty2(obj, key, value) { if (key in obj) { Object.defineProp
 function _typeof2(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof2 = function _typeof2(obj) { return typeof obj; }; } else { _typeof2 = function _typeof2(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof2(obj); }
 
 /*!
-* quick-paper v0.4.1
+* quick-paper v0.5.0
 * (c) 2019-2021 你好2007 git+https://github.com/hai2007/quick-paper.git
 * License: MIT
 */
@@ -1264,6 +1264,411 @@ function _typeof2(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "funct
       extend.install.call(extend, QuickPaper);
     };
   }
+
+  function initGlobalAPI(QuickPaper) {
+    // 登记扩展内容
+    QuickPaper.prototype.__directiveLib = {};
+    QuickPaper.prototype.__componentLib = {}; // 挂载
+
+    mount(QuickPaper);
+    use(QuickPaper);
+  }
+
+  var update = function update(el, binding) {
+    // 如果有type表示给属性赋值
+    if (isString(binding.type) && binding.type.length > 0) {
+      if (el.getAttribute(binding.type) != binding.value) {
+        el.setAttribute(binding.type, binding.value);
+      }
+    } // 否则是设置内容或值
+    else {
+        if (el.value != binding.value || el.textContent != binding.value) {
+          el.value = el.textContent = binding.value;
+        }
+      }
+  };
+
+  var qBind = {
+    inserted: update,
+    update: update
+  };
+  /**
+   * [可以使用的修饰符]
+   * .prevent 阻止默认事件
+   * .stop    阻止冒泡
+   * .once    只执行一次
+   */
+
+  var qOn = {
+    inserted: function inserted(el, binding) {
+      var types = binding.type.split('.'),
+          modifier = {
+        "prevent": false,
+        "stop": false,
+        "once": false
+      },
+          callback = function callback(event) {
+        if (modifier.stop) stopPropagation(event);
+        if (modifier.prevent) preventDefault(event);
+        var exps = /^([^(]+)(\([^)]{0,}\)){0,1}/.exec(binding.exp),
+            params = [],
+            oralParams = [];
+
+        if (exps[2]) {
+          // 获取原始的数据
+          var temp = exps[2].replace(/^\(/, '').replace(/\)$/, '').trim();
+
+          if (temp.length > 0) {
+            oralParams = temp.split(',');
+          }
+        } // 解析
+
+
+        for (var i = 0; i < oralParams.length; i++) {
+          var param = oralParams[i];
+          param = evalExpress(binding.target, param);
+          params.push(param);
+        } // 追加事件event
+
+
+        params.push(event);
+        binding.target[exps[1]].apply(binding.target, params);
+
+        if (modifier.once) {
+          unbindEvent(el, types[0], callback);
+        }
+      };
+
+      for (var i = 1; i < types.length; i++) {
+        modifier[types[i]] = true;
+      }
+
+      bindEvent(el, types[0], callback);
+    }
+  };
+  var qModel = {
+    inserted: function inserted(el, binding) {
+      el.value = binding.value;
+      bindEvent(el, 'input', function () {
+        setValue(binding.target, "." + binding.exp, el.value);
+      });
+    },
+    update: function update(el, binding) {
+      el.value = binding.value;
+    }
+  };
+  var component = {
+    name: "component",
+    data: function data() {
+      return {
+        is: null
+      };
+    },
+    methods: {
+      lister: function lister(QuickPaper, newIS) {
+        // 如果动态组件没有改变
+        if (newIS == this.is || newIS == null) return;
+        var oldComponent = this._oldComponent;
+        if (oldComponent) oldComponent.$$lifecycle("beforeDestroy");
+        this.is = newIS;
+        var options = newIS;
+        options.el = this._el; // 标记替换而不是追加
+
+        options.el._nodeName = 'Quick-Paper-COMPONENT'; // 重定向挂载点
+
+        this._oldComponent = new QuickPaper(options);
+        this._el = this._oldComponent._el;
+
+        if (oldComponent) {
+          oldComponent.$$lifecycle("destroyed");
+          oldComponent = null;
+        }
+      }
+    }
+  };
+  /**
+   * 备注：
+   * $$开头的表示内部方法，__开头的表示内部资源
+   * $开头的表示对外暴露的内置方法，_开头表示的是对外只读的内置资源
+   * =========================================
+   * 整合全部资源，对外暴露调用接口
+   */
+  // 挂载全局方法
+
+  initGlobalAPI(QuickPaper);
+  QuickPaper.directive('qBind', qBind);
+  QuickPaper.directive('qOn', qOn);
+  QuickPaper.directive('qModel', qModel);
+  QuickPaper.component('component', component); // 把组件挂载到页面中去
+
+  QuickPaper.prototype.$$mount = function () {
+    if (isFunction(this._options.render)) {
+      // 记录render
+      // 这样写是为了方便后期如何对render添加兼容好改造
+      this.$$render = this._options.render; // 准备好以后挂载
+
+      this.$$mountComponent();
+    } else {
+      throw new Error("options.render needs to be a function");
+    }
+  };
+  /*!
+   * 💡 - 提供常用的DOM操作方法
+   * https://github.com/hai2007/tool.js/blob/master/xhtml.js
+   *
+   * author hai2007 < https://hai2007.gitee.io/sweethome >
+   *
+   * Copyright (c) 2021-present hai2007 走一步，再走一步。
+   * Released under the MIT license
+   */
+  // 命名空间路径
+
+
+  var namespace = {
+    svg: "http://www.w3.org/2000/svg",
+    xhtml: "http://www.w3.org/1999/xhtml",
+    xlink: "http://www.w3.org/1999/xlink",
+    xml: "http://www.w3.org/XML/1998/namespace",
+    xmlns: "http://www.w3.org/2000/xmlns/"
+  };
+  /**
+   * 结点操作补充
+   */
+
+  var xhtml = {
+    // 阻止冒泡
+    "stopPropagation": function stopPropagation(event) {
+      event = event || window.event;
+
+      if (event.stopPropagation) {
+        //这是其他非IE浏览器
+        event.stopPropagation();
+      } else {
+        event.cancelBubble = true;
+      }
+    },
+    // 阻止默认事件
+    "preventDefault": function preventDefault(event) {
+      event = event || window.event;
+
+      if (event.preventDefault) {
+        event.preventDefault();
+      } else {
+        event.returnValue = false;
+      }
+    },
+    // 判断是否是结点
+    "isNode": function isNode(param) {
+      return param && (param.nodeType === 1 || param.nodeType === 9 || param.nodeType === 11);
+    },
+    // 绑定事件
+    "bind": function bind(dom, eventType, callback) {
+      if (dom.constructor === Array || dom.constructor === NodeList) {
+        for (var i = 0; i < dom.length; i++) {
+          this.bind(dom[i], eventType, callback);
+        }
+
+        return;
+      }
+
+      if (window.attachEvent) dom.attachEvent("on" + eventType, callback);else dom.addEventListener(eventType, callback, false);
+    },
+    // 去掉绑定事件
+    "unbind": function unbind(dom, eventType, handler) {
+      if (dom.constructor === Array || dom.constructor === NodeList) {
+        for (var i = 0; i < dom.length; i++) {
+          this.unbind(dom[i], eventType, handler);
+        }
+
+        return;
+      }
+
+      if (window.detachEvent) dom.detachEvent('on' + eventType, handler);else dom.removeEventListener(eventType, handler, false);
+    },
+    // 在当前上下文context上查找结点
+    // selectFun可选，返回boolean用以判断当前面对的结点是否保留
+    "find": function find(context, selectFun, tagName) {
+      if (!this.isNode(context)) return [];
+      var nodes = context.getElementsByTagName(tagName || '*');
+      var result = [];
+
+      for (var i = 0; i < nodes.length; i++) {
+        if (this.isNode(nodes[i]) && (typeof selectFun != "function" || selectFun(nodes[i]))) result.push(nodes[i]);
+      }
+
+      return result;
+    },
+    // 寻找当前结点的孩子结点
+    // selectFun可选，返回boolean用以判断当前面对的结点是否保留
+    "children": function children(dom, selectFun) {
+      var nodes = dom.childNodes;
+      var result = [];
+
+      for (var i = 0; i < nodes.length; i++) {
+        if (this.isNode(nodes[i]) && (typeof selectFun != "function" || selectFun(nodes[i]))) result.push(nodes[i]);
+      }
+
+      return result;
+    },
+    // 判断结点是否有指定class
+    // clazzs可以是字符串或数组字符串
+    // notStrict可选，boolean值，默认false表示结点必须包含全部class,true表示至少包含一个即可
+    "hasClass": function hasClass(dom, clazzs, notStrict) {
+      if (clazzs.constructor !== Array) clazzs = [clazzs];
+      var class_str = " " + (dom.getAttribute('class') || "") + " ";
+
+      for (var i = 0; i < clazzs.length; i++) {
+        if (class_str.indexOf(" " + clazzs[i] + " ") >= 0) {
+          if (notStrict) return true;
+        } else {
+          if (!notStrict) return false;
+        }
+      }
+
+      return true;
+    },
+    // 删除指定class
+    "removeClass": function removeClass(dom, clazz) {
+      var oldClazz = " " + (dom.getAttribute('class') || "") + " ";
+      var newClazz = oldClazz.replace(" " + clazz.trim() + " ", " ");
+      dom.setAttribute('class', newClazz.trim());
+    },
+    // 添加指定class
+    "addClass": function addClass(dom, clazz) {
+      if (this.hasClass(dom, clazz)) return;
+      var oldClazz = dom.getAttribute('class') || "";
+      dom.setAttribute('class', oldClazz + " " + clazz);
+    },
+    // 字符串变成结点
+    // isSvg可选，boolean值，默认false表示结点是html，为true表示svg类型
+    "toNode": function toNode(string, isSvg) {
+      var frame; // html和svg上下文不一样
+
+      if (isSvg) frame = document.createElementNS(namespace.svg, 'svg');else frame = document.createElement("div"); // 低版本浏览器svg没有innerHTML，考虑是vue框架中，没有补充
+
+      frame.innerHTML = string;
+      var childNodes = frame.childNodes;
+
+      for (var i = 0; i < childNodes.length; i++) {
+        if (this.isNode(childNodes[i])) return childNodes[i];
+      }
+    },
+    // 主动触发事件
+    "trigger": function trigger(dom, eventType) {
+      //创建event的对象实例。
+      if (document.createEventObject) {
+        // IE浏览器支持fireEvent方法
+        dom.fireEvent('on' + eventType, document.createEventObject());
+      } // 其他标准浏览器使用dispatchEvent方法
+      else {
+          var _event = document.createEvent('HTMLEvents'); // 3个参数：事件类型，是否冒泡，是否阻止浏览器的默认行为
+
+
+          _event.initEvent(eventType, true, false);
+
+          dom.dispatchEvent(_event);
+        }
+    },
+    // 获取样式
+    "getStyle": function getStyle(dom, name) {
+      // 获取结点的全部样式
+      var allStyle = document.defaultView && document.defaultView.getComputedStyle ? document.defaultView.getComputedStyle(dom, null) : dom.currentStyle; // 如果没有指定属性名称，返回全部样式
+
+      return typeof name === 'string' ? allStyle.getPropertyValue(name) : allStyle;
+    },
+    // 获取元素位置
+    "offsetPosition": function offsetPosition(dom) {
+      var left = 0;
+      var top = 0;
+      top = dom.offsetTop;
+      left = dom.offsetLeft;
+      dom = dom.offsetParent;
+
+      while (dom) {
+        top += dom.offsetTop;
+        left += dom.offsetLeft;
+        dom = dom.offsetParent;
+      }
+
+      return {
+        "left": left,
+        "top": top
+      };
+    },
+    // 获取鼠标相对元素位置
+    "mousePosition": function mousePosition(dom, event) {
+      var bounding = dom.getBoundingClientRect();
+      if (!event || !event.clientX) throw new Error('Event is necessary!');
+      return {
+        "x": event.clientX - bounding.left,
+        "y": event.clientY - bounding.top
+      };
+    },
+    // 删除结点
+    "remove": function remove(dom) {
+      dom.parentNode.removeChild(dom);
+    },
+    // 设置多个样式
+    "setStyles": function setStyles(dom, styles) {
+      for (var key in styles) {
+        dom.style[key] = styles[key];
+      }
+    },
+    // 获取元素大小
+    "size": function size(dom, type) {
+      var elemHeight, elemWidth;
+
+      if (type == 'content') {
+        //内容
+        elemWidth = dom.clientWidth - (this.getStyle(dom, 'padding-left') + "").replace('px', '') - (this.getStyle(dom, 'padding-right') + "").replace('px', '');
+        elemHeight = dom.clientHeight - (this.getStyle(dom, 'padding-top') + "").replace('px', '') - (this.getStyle(dom, 'padding-bottom') + "").replace('px', '');
+      } else if (type == 'padding') {
+        //内容+内边距
+        elemWidth = dom.clientWidth;
+        elemHeight = dom.clientHeight;
+      } else if (type == 'border') {
+        //内容+内边距+边框
+        elemWidth = dom.offsetWidth;
+        elemHeight = dom.offsetHeight;
+      } else if (type == 'scroll') {
+        //滚动的宽（不包括border）
+        elemWidth = dom.scrollWidth;
+        elemHeight = dom.scrollHeight;
+      } else {
+        elemWidth = dom.offsetWidth;
+        elemHeight = dom.offsetHeight;
+      }
+
+      return {
+        width: elemWidth,
+        height: elemHeight
+      };
+    },
+    // 在被选元素内部的结尾插入内容
+    "append": function append(el, template) {
+      var node = this.isNode(template) ? template : this.toNode(template);
+      el.appendChild(node);
+      return node;
+    },
+    // 在被选元素内部的开头插入内容
+    "prepend": function prepend(el, template) {
+      var node = this.isNode(template) ? template : this.toNode(template);
+      el.insertBefore(node, el.childNodes[0]);
+      return node;
+    },
+    // 在被选元素之后插入内容
+    "after": function after(el, template) {
+      var node = this.isNode(template) ? template : this.toNode(template);
+      el.parentNode.insertBefore(node, el.nextSibling);
+      return node;
+    },
+    // 在被选元素之前插入内容
+    "before": function before(el, template) {
+      var node = this.isNode(template) ? template : this.toNode(template);
+      el.parentNode.insertBefore(node, el);
+      return node;
+    }
+  };
 
   function createCommonjsModule(fn, module) {
     return module = {
@@ -2927,357 +3332,6 @@ function _typeof2(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "funct
       }
     })();
   });
-
-  function initGlobalAPI(QuickPaper) {
-    // 登记扩展内容
-    QuickPaper.prototype.__directiveLib = {};
-    QuickPaper.prototype.__componentLib = {};
-    QuickPaper.prototype.__OpenWebEditor = openWebEditor_min;
-    QuickPaper.__OpenWebEditor = openWebEditor_min; // 挂载
-
-    mount(QuickPaper);
-    use(QuickPaper);
-  }
-
-  var update = function update(el, binding) {
-    // 如果有type表示给属性赋值
-    if (isString(binding.type) && binding.type.length > 0) {
-      if (el.getAttribute(binding.type) != binding.value) {
-        el.setAttribute(binding.type, binding.value);
-      }
-    } // 否则是设置内容或值
-    else {
-        if (el.value != binding.value || el.textContent != binding.value) {
-          el.value = el.textContent = binding.value;
-        }
-      }
-  };
-
-  var qBind = {
-    inserted: update,
-    update: update
-  };
-  /**
-   * [可以使用的修饰符]
-   * .prevent 阻止默认事件
-   * .stop    阻止冒泡
-   * .once    只执行一次
-   */
-
-  var qOn = {
-    inserted: function inserted(el, binding) {
-      var types = binding.type.split('.'),
-          modifier = {
-        "prevent": false,
-        "stop": false,
-        "once": false
-      },
-          callback = function callback(event) {
-        if (modifier.stop) stopPropagation(event);
-        if (modifier.prevent) preventDefault(event);
-        var exps = /^([^(]+)(\([^)]{0,}\)){0,1}/.exec(binding.exp),
-            params = [],
-            oralParams = [];
-
-        if (exps[2]) {
-          // 获取原始的数据
-          var temp = exps[2].replace(/^\(/, '').replace(/\)$/, '').trim();
-
-          if (temp.length > 0) {
-            oralParams = temp.split(',');
-          }
-        } // 解析
-
-
-        for (var i = 0; i < oralParams.length; i++) {
-          var param = oralParams[i];
-          param = evalExpress(binding.target, param);
-          params.push(param);
-        } // 追加事件event
-
-
-        params.push(event);
-        binding.target[exps[1]].apply(binding.target, params);
-
-        if (modifier.once) {
-          unbindEvent(el, types[0], callback);
-        }
-      };
-
-      for (var i = 1; i < types.length; i++) {
-        modifier[types[i]] = true;
-      }
-
-      bindEvent(el, types[0], callback);
-    }
-  };
-  var qModel = {
-    inserted: function inserted(el, binding) {
-      el.value = binding.value;
-      bindEvent(el, 'input', function () {
-        setValue(binding.target, "." + binding.exp, el.value);
-      });
-    },
-    update: function update(el, binding) {
-      el.value = binding.value;
-    }
-  };
-  /*!
-   * 💡 - 提供常用的DOM操作方法
-   * https://github.com/hai2007/tool.js/blob/master/xhtml.js
-   *
-   * author hai2007 < https://hai2007.gitee.io/sweethome >
-   *
-   * Copyright (c) 2021-present hai2007 走一步，再走一步。
-   * Released under the MIT license
-   */
-  // 命名空间路径
-
-  var namespace = {
-    svg: "http://www.w3.org/2000/svg",
-    xhtml: "http://www.w3.org/1999/xhtml",
-    xlink: "http://www.w3.org/1999/xlink",
-    xml: "http://www.w3.org/XML/1998/namespace",
-    xmlns: "http://www.w3.org/2000/xmlns/"
-  };
-  /**
-   * 结点操作补充
-   */
-
-  var xhtml = {
-    // 阻止冒泡
-    "stopPropagation": function stopPropagation(event) {
-      event = event || window.event;
-
-      if (event.stopPropagation) {
-        //这是其他非IE浏览器
-        event.stopPropagation();
-      } else {
-        event.cancelBubble = true;
-      }
-    },
-    // 阻止默认事件
-    "preventDefault": function preventDefault(event) {
-      event = event || window.event;
-
-      if (event.preventDefault) {
-        event.preventDefault();
-      } else {
-        event.returnValue = false;
-      }
-    },
-    // 判断是否是结点
-    "isNode": function isNode(param) {
-      return param && (param.nodeType === 1 || param.nodeType === 9 || param.nodeType === 11);
-    },
-    // 绑定事件
-    "bind": function bind(dom, eventType, callback) {
-      if (dom.constructor === Array || dom.constructor === NodeList) {
-        for (var i = 0; i < dom.length; i++) {
-          this.bind(dom[i], eventType, callback);
-        }
-
-        return;
-      }
-
-      if (window.attachEvent) dom.attachEvent("on" + eventType, callback);else dom.addEventListener(eventType, callback, false);
-    },
-    // 去掉绑定事件
-    "unbind": function unbind(dom, eventType, handler) {
-      if (dom.constructor === Array || dom.constructor === NodeList) {
-        for (var i = 0; i < dom.length; i++) {
-          this.unbind(dom[i], eventType, handler);
-        }
-
-        return;
-      }
-
-      if (window.detachEvent) dom.detachEvent('on' + eventType, handler);else dom.removeEventListener(eventType, handler, false);
-    },
-    // 在当前上下文context上查找结点
-    // selectFun可选，返回boolean用以判断当前面对的结点是否保留
-    "find": function find(context, selectFun, tagName) {
-      if (!this.isNode(context)) return [];
-      var nodes = context.getElementsByTagName(tagName || '*');
-      var result = [];
-
-      for (var i = 0; i < nodes.length; i++) {
-        if (this.isNode(nodes[i]) && (typeof selectFun != "function" || selectFun(nodes[i]))) result.push(nodes[i]);
-      }
-
-      return result;
-    },
-    // 寻找当前结点的孩子结点
-    // selectFun可选，返回boolean用以判断当前面对的结点是否保留
-    "children": function children(dom, selectFun) {
-      var nodes = dom.childNodes;
-      var result = [];
-
-      for (var i = 0; i < nodes.length; i++) {
-        if (this.isNode(nodes[i]) && (typeof selectFun != "function" || selectFun(nodes[i]))) result.push(nodes[i]);
-      }
-
-      return result;
-    },
-    // 判断结点是否有指定class
-    // clazzs可以是字符串或数组字符串
-    // notStrict可选，boolean值，默认false表示结点必须包含全部class,true表示至少包含一个即可
-    "hasClass": function hasClass(dom, clazzs, notStrict) {
-      if (clazzs.constructor !== Array) clazzs = [clazzs];
-      var class_str = " " + (dom.getAttribute('class') || "") + " ";
-
-      for (var i = 0; i < clazzs.length; i++) {
-        if (class_str.indexOf(" " + clazzs[i] + " ") >= 0) {
-          if (notStrict) return true;
-        } else {
-          if (!notStrict) return false;
-        }
-      }
-
-      return true;
-    },
-    // 删除指定class
-    "removeClass": function removeClass(dom, clazz) {
-      var oldClazz = " " + (dom.getAttribute('class') || "") + " ";
-      var newClazz = oldClazz.replace(" " + clazz.trim() + " ", " ");
-      dom.setAttribute('class', newClazz.trim());
-    },
-    // 添加指定class
-    "addClass": function addClass(dom, clazz) {
-      if (this.hasClass(dom, clazz)) return;
-      var oldClazz = dom.getAttribute('class') || "";
-      dom.setAttribute('class', oldClazz + " " + clazz);
-    },
-    // 字符串变成结点
-    // isSvg可选，boolean值，默认false表示结点是html，为true表示svg类型
-    "toNode": function toNode(string, isSvg) {
-      var frame; // html和svg上下文不一样
-
-      if (isSvg) frame = document.createElementNS(namespace.svg, 'svg');else frame = document.createElement("div"); // 低版本浏览器svg没有innerHTML，考虑是vue框架中，没有补充
-
-      frame.innerHTML = string;
-      var childNodes = frame.childNodes;
-
-      for (var i = 0; i < childNodes.length; i++) {
-        if (this.isNode(childNodes[i])) return childNodes[i];
-      }
-    },
-    // 主动触发事件
-    "trigger": function trigger(dom, eventType) {
-      //创建event的对象实例。
-      if (document.createEventObject) {
-        // IE浏览器支持fireEvent方法
-        dom.fireEvent('on' + eventType, document.createEventObject());
-      } // 其他标准浏览器使用dispatchEvent方法
-      else {
-          var _event = document.createEvent('HTMLEvents'); // 3个参数：事件类型，是否冒泡，是否阻止浏览器的默认行为
-
-
-          _event.initEvent(eventType, true, false);
-
-          dom.dispatchEvent(_event);
-        }
-    },
-    // 获取样式
-    "getStyle": function getStyle(dom, name) {
-      // 获取结点的全部样式
-      var allStyle = document.defaultView && document.defaultView.getComputedStyle ? document.defaultView.getComputedStyle(dom, null) : dom.currentStyle; // 如果没有指定属性名称，返回全部样式
-
-      return typeof name === 'string' ? allStyle.getPropertyValue(name) : allStyle;
-    },
-    // 获取元素位置
-    "offsetPosition": function offsetPosition(dom) {
-      var left = 0;
-      var top = 0;
-      top = dom.offsetTop;
-      left = dom.offsetLeft;
-      dom = dom.offsetParent;
-
-      while (dom) {
-        top += dom.offsetTop;
-        left += dom.offsetLeft;
-        dom = dom.offsetParent;
-      }
-
-      return {
-        "left": left,
-        "top": top
-      };
-    },
-    // 获取鼠标相对元素位置
-    "mousePosition": function mousePosition(dom, event) {
-      var bounding = dom.getBoundingClientRect();
-      if (!event || !event.clientX) throw new Error('Event is necessary!');
-      return {
-        "x": event.clientX - bounding.left,
-        "y": event.clientY - bounding.top
-      };
-    },
-    // 删除结点
-    "remove": function remove(dom) {
-      dom.parentNode.removeChild(dom);
-    },
-    // 设置多个样式
-    "setStyles": function setStyles(dom, styles) {
-      for (var key in styles) {
-        dom.style[key] = styles[key];
-      }
-    },
-    // 获取元素大小
-    "size": function size(dom, type) {
-      var elemHeight, elemWidth;
-
-      if (type == 'content') {
-        //内容
-        elemWidth = dom.clientWidth - (this.getStyle(dom, 'padding-left') + "").replace('px', '') - (this.getStyle(dom, 'padding-right') + "").replace('px', '');
-        elemHeight = dom.clientHeight - (this.getStyle(dom, 'padding-top') + "").replace('px', '') - (this.getStyle(dom, 'padding-bottom') + "").replace('px', '');
-      } else if (type == 'padding') {
-        //内容+内边距
-        elemWidth = dom.clientWidth;
-        elemHeight = dom.clientHeight;
-      } else if (type == 'border') {
-        //内容+内边距+边框
-        elemWidth = dom.offsetWidth;
-        elemHeight = dom.offsetHeight;
-      } else if (type == 'scroll') {
-        //滚动的宽（不包括border）
-        elemWidth = dom.scrollWidth;
-        elemHeight = dom.scrollHeight;
-      } else {
-        elemWidth = dom.offsetWidth;
-        elemHeight = dom.offsetHeight;
-      }
-
-      return {
-        width: elemWidth,
-        height: elemHeight
-      };
-    },
-    // 在被选元素内部的结尾插入内容
-    "append": function append(el, template) {
-      var node = this.isNode(template) ? template : this.toNode(template);
-      el.appendChild(node);
-      return node;
-    },
-    // 在被选元素内部的开头插入内容
-    "prepend": function prepend(el, template) {
-      var node = this.isNode(template) ? template : this.toNode(template);
-      el.insertBefore(node, el.childNodes[0]);
-      return node;
-    },
-    // 在被选元素之后插入内容
-    "after": function after(el, template) {
-      var node = this.isNode(template) ? template : this.toNode(template);
-      el.parentNode.insertBefore(node, el.nextSibling);
-      return node;
-    },
-    // 在被选元素之前插入内容
-    "before": function before(el, template) {
-      var node = this.isNode(template) ? template : this.toNode(template);
-      el.parentNode.insertBefore(node, el);
-      return node;
-    }
-  };
   var qCode = {
     inserted: function inserted(el, binding) {
       var code = el.innerHTML.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
@@ -3350,35 +3404,6 @@ function _typeof2(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "funct
       el.__owe__ = owe;
     }
   };
-  var component = {
-    name: "component",
-    data: function data() {
-      return {
-        is: null
-      };
-    },
-    methods: {
-      lister: function lister(QuickPaper, newIS) {
-        // 如果动态组件没有改变
-        if (newIS == this.is || newIS == null) return;
-        var oldComponent = this._oldComponent;
-        if (oldComponent) oldComponent.$$lifecycle("beforeDestroy");
-        this.is = newIS;
-        var options = newIS;
-        options.el = this._el; // 标记替换而不是追加
-
-        options.el._nodeName = 'Quick-Paper-COMPONENT'; // 重定向挂载点
-
-        this._oldComponent = new QuickPaper(options);
-        this._el = this._oldComponent._el;
-
-        if (oldComponent) {
-          oldComponent.$$lifecycle("destroyed");
-          oldComponent = null;
-        }
-      }
-    }
-  };
 
   function urlFormat(url) {
     var splitTemp = url.split('?');
@@ -3402,36 +3427,11 @@ function _typeof2(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "funct
     };
     return resultData;
   }
-  /**
-   * 备注：
-   * $$开头的表示内部方法，__开头的表示内部资源
-   * $开头的表示对外暴露的内置方法，_开头表示的是对外只读的内置资源
-   * =========================================
-   * 整合全部资源，对外暴露调用接口
-   */
-  // 挂载全局方法
 
-
-  initGlobalAPI(QuickPaper);
-  QuickPaper.directive('qBind', qBind);
-  QuickPaper.directive('qOn', qOn);
-  QuickPaper.directive('qModel', qModel);
   QuickPaper.directive('qCode', qCode);
-  QuickPaper.component('component', component);
-  QuickPaper.urlFormat = urlFormat; // 把组件挂载到页面中去
-
-  QuickPaper.prototype.$$mount = function () {
-    if (isFunction(this._options.render)) {
-      // 记录render
-      // 这样写是为了方便后期如何对render添加兼容好改造
-      this.$$render = this._options.render; // 准备好以后挂载
-
-      this.$$mountComponent();
-    } else {
-      throw new Error("options.render needs to be a function");
-    }
-  }; // 根据运行环境，导出接口
-
+  QuickPaper.urlFormat = urlFormat;
+  QuickPaper.prototype.__OpenWebEditor = openWebEditor_min;
+  QuickPaper.__OpenWebEditor = openWebEditor_min; // 根据运行环境，导出接口
 
   if ((typeof module === "undefined" ? "undefined" : _typeof2(module)) === "object" && _typeof2(module.exports) === "object") {
     module.exports = QuickPaper;

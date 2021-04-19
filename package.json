@@ -1,10 +1,10 @@
 {
   "name": "quick-paper",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "description": "📚 用于快速构建文档的前端框架。 ",
   "main": "dist/quick-paper.min.js",
   "scripts": {
-    "build": "hai2007_nodejs -d dist && node build.js",
+    "build": "hai2007_nodejs -d dist && node build.js &&  node build.core.js",
     "start": "npm install && npm run build"
   },
   "repository": {
