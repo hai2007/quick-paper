@@ -9,14 +9,11 @@ function _defineProperty(obj, key, value) { if (key in obj) { Object.definePrope
 function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
 
 /*!
-* quick-paper.core v0.5.0
+* quick-paper.core v0.5.1
 * (c) 2019-2021 你好2007 git+https://github.com/hai2007/quick-paper.git
 * License: MIT
 */
-(void 0)['quick-paper'] = (void 0)['quick-paper'] || {};
-(void 0)['quick-paper'].core = (void 0)['quick-paper'].core || {};
-
-(void 0)['quick-paper'].core.rollup = function () {
+(function () {
   'use strict';
   /**
    * 判断一个值是不是Object。
@@ -1414,7 +1411,12 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
     } else {
       throw new Error("options.render needs to be a function");
     }
-  };
+  }; // 根据运行环境，导出接口
 
-  return QuickPaper;
-}();
+
+  if ((typeof module === "undefined" ? "undefined" : _typeof(module)) === "object" && _typeof(module.exports) === "object") {
+    module.exports = QuickPaper;
+  } else {
+    window.QuickPaper = QuickPaper;
+  }
+})();

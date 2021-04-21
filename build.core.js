@@ -54,7 +54,7 @@ async function build(inputOptions, outputOptions) {
 }
 
 build({
-  "input": "./src/core/index.js",
+  "input": "./src/index.core.js",
   "plugins": [
 
     // 帮助 Rollup 查找外部模块，然后安装

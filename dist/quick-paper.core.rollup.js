@@ -1,12 +1,10 @@
 /*!
-* quick-paper.core v0.5.0
+* quick-paper.core v0.5.1
 * (c) 2019-2021 你好2007 git+https://github.com/hai2007/quick-paper.git
 * License: MIT
 */
 
-this['quick-paper'] = this['quick-paper'] || {};
-this['quick-paper'].core = this['quick-paper'].core || {};
-this['quick-paper'].core.rollup = (function () {
+(function () {
     'use strict';
 
     /**
@@ -1532,6 +1530,11 @@ this['quick-paper'].core.rollup = (function () {
 
     };
 
-    return QuickPaper;
+    // 根据运行环境，导出接口
+    if (typeof module === "object" && typeof module.exports === "object") {
+        module.exports = QuickPaper;
+    } else {
+        window.QuickPaper = QuickPaper;
+    }
 
 }());

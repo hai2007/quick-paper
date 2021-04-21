@@ -101,6 +101,24 @@ window.quickPaper = new QuickPaper({
 
 更多细节请[查阅文档](https://hai2007.gitee.io/quick-paper)获得帮助。
 
+更小的包
+--------------------------------------
+
+如果你并不需要用的所有的功能，只需要核心部分，你可以直接使用更小的核心包。比如你使用wbepack打包，可以进行如下配置：
+
+```js
+ resolve: {
+    alias: {
+        'quick-paper': 'quick-paper/dist/quick-paper.core.min.js'
+    }
+},
+```
+
+核心包除了必要的功能外，还包括下列功能：
+
+- 基础指令：```q-on```、```q-bind```和```q-model```
+- 动态组件：```component```
+
 如何调试loader？
 --------------------------------------
 

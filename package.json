@@ -1,6 +1,6 @@
 {
   "name": "quick-paper",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "📚 用于快速构建文档的前端框架。 ",
   "main": "dist/quick-paper.min.js",
   "scripts": {
