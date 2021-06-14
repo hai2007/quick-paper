@@ -41,7 +41,7 @@ module.exports = {
             loader: ['quick-paper/loader/index.js']
         },{
             test: /\.(css|scss)$/,
-            loader: ['quick-paper/style-loader/index.js', 'css-loader', 'postcss-loader', 'sass-loader']
+            loader: ['quick-paper/style-loader/index.js', 'css-loader', 'postcss-loader', './scss-loader.js']
         },
             // ......
         ]

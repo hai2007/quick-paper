@@ -33,7 +33,7 @@ module.exports = {
             }]
         }, {
             test: /\.(css|scss)$/,
-            loader: ['../style-loader/index.js', 'css-loader', 'postcss-loader', 'sass-loader']
+            loader: ['../style-loader/index.js', 'css-loader', 'postcss-loader', './scss-loader.js']
         }]
     },
     plugins: [
