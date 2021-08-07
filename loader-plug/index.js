@@ -10,7 +10,7 @@
 const pluginName = 'QuickPaperLoaderPlugin';
 const namespace = 'quickpaper-loader';
 
-const RuleSet = require('webpack/lib/RuleSet');
+const RuleSet = require('./RuleSet');
 const qs = require('querystring');
 
 class QuickPaperLoaderPlugin {
