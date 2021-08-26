@@ -2,7 +2,7 @@
     <header>
         <div>
             <a href="https://github.com/hai2007/quick-paper" target="_blank">
-                QuickPaper - 📚 用于快速构建文档的前端框架
+                Quick-Paper | 简单易用的前端框架
             </a>
         </div>
     </header>
@@ -12,7 +12,6 @@
         <button @click='loadpage("directive")' :active='url=="directive"?"yes":"no"'>指令列表</button>
         <button @click='loadpage("component")' :active='url=="component"?"yes":"no"'>组件列表</button>
         <button @click='loadpage("method")' :active='url=="method"?"yes":"no"'>常用方法</button>
-        <button @click='loadpage("plug")' :active='url=="plug"?"yes":"no"'>内置插件</button>
     </nav>
     <div class='content'>
         <component :is='page'></component>
@@ -34,8 +33,7 @@
         course: () => import('./pages/course.paper'),
         directive: () => import('./pages/directive.paper'),
         component: () => import('./pages/component.paper'),
-        method: () => import('./pages/method.paper'),
-        plug: () => import('./pages/plug.paper')
+        method: () => import('./pages/method.paper')
     };
 
     import QuickPaper from 'quick-paper';

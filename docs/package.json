@@ -1,7 +1,7 @@
 {
   "name": "doc-for-quickpaper",
   "version": "0.0.0",
-  "description": "📚 文档 - QuickPaper.js",
+  "description": "简单易用的前端框架",
   "scripts": {
     "start": "npm install && npm run dev",
     "dev": "node_modules/.bin/webpack-dev-server --config webpack.dev.js",
@@ -29,6 +29,7 @@
   "dependencies": {
     "@hai2007/polyfill": "^0.1.1",
     "@hai2007/style": "^0.2.3",
-    "clunch": "^1.4.4"
+    "clunch": "^1.4.4",
+    "open-web-editor": "^0.3.2"
   }
 }

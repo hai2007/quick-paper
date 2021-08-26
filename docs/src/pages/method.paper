@@ -15,28 +15,4 @@ QuickPaper.use({
     <p>
         我们一般会把use的参数作为一个文件，或者作为一个包发布，这样就可以每次按需引入需要的扩展功能，更加灵活。
     </p>
-    <h3>
-        QuickPaper.urlFormat：地址格式解析
-    </h3>
-    <pre q-code>
-var result = QuickPaper.urlFormat(urlString);
-    </pre>
-    <p>
-        比如我们的urlString是这样的：
-    </p>
-    <pre q-code>
-var urlString = 'http://127.0.0.1:20000/#/home/more?fixed=author&value=top';
-    </pre>
-    <p>
-        那么，运行的结果就是：
-    </p>
-    <pre q-code>
-result = {
-        params: {
-            fixed: "author",
-            value:"top"
-        },
-        router: ["home", "more"]
-    };
-    </pre>
 </template>

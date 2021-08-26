@@ -55,40 +55,4 @@
         有时候为了方便，q-on:可以用@代替，比如开始的例子改写一下：
     </p>
     <pre q-code='html'><div @click='doit()'>点击我</div></pre>
-    <h3>
-        q-code：用于提供代码显示
-    </h3>
-    <p>
-        比如你想显示个打印语句：console.log('你好');
-    </p>
-    <pre q-code='html'>&lt;pre q-code&gt;console.log('你好');&lt;/pre&gt;</pre>
-    <p>
-        如果你知道你需要显示的代码是什么语言，你还可以进行指定语言类型，比如上面的是一个js:
-    </p>
-    <pre q-code='html'>&lt;pre q-code='javascript'&gt;console.log('你好');&lt;/pre&gt;</pre>
-    <p>
-        我们目前支持的语言类型如下：
-    </p>
-    <ul>
-        <li>
-            1.html:可以显示标签类型的，比如.vue文件，xml等。
-        </li>
-        <li>
-            2.css:样式类型的文件。
-        </li>
-        <li>
-            3.javascript:默认值，是为js提供的，不过大部分情况下，都可以正常使用。
-        </li>
-    </ul>
-    <p>
-        此外，如果你希望显示的区域可编辑，可以这样设置：
-    </p>
-    <pre q-code='html'>&lt;pre q-code:editor='javascript'&gt;console.log('你好');&lt;/pre&gt;</pre>
-    <p>
-        对于可编辑区域，你可能希望获取当前编辑器的内容，直接使用如下方法即可：
-    </p>
-    <pre q-code>
-// 其中el是原生DOM结点，也就是q-code指令所在的结点
-var code = el.__owe__.valueOf();
-    </pre>
 </template>
